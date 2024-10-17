@@ -5,6 +5,7 @@ from io import BytesIO
 import os
 from dotenv import load_dotenv
 from image_processor import ImageProcessor
+import requests
 
 # Load environment variables from .env file
 load_dotenv()
@@ -120,10 +121,11 @@ def process_image():
 
 # Run the app
 if __name__ == '__main__':
-    # Check if running in production environment
-    if os.getenv('FLASK_ENV') == 'production':
-        # Run with production settings
-        app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=False)
-    else:
-        # Run with debugging enabled for development
-        app.run(debug=True)
+    app.run(debug=True)
+
+    # Make a GET request to /ping to check if the server is running
+    try:
+        response = requests.get('http://127.0.0.1:5000/ping')  # Adjust the URL if necessary
+        print(response.json())  # Print the response to the console
+    except Exception as e:
+        print(f"Error making request to /ping: {str(e)}")

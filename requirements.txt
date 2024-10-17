@@ -5,3 +5,4 @@ easyocr
 Pillow
 Werkzeug>=2.0.0
 Gunicorn
+requests
