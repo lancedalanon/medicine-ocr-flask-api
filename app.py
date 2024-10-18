@@ -9,6 +9,7 @@ from image_processor import ImageProcessor
 import requests
 import sys
 from pathlib import Path
+import socket
 
 # Load environment variables from .env file
 load_dotenv()
@@ -53,6 +54,19 @@ def require_api_key(f):
                 'data': None
             }), 403
     return decorated_function
+
+# Get the local IP address
+def get_local_ip():
+    try:
+        # Create a socket and connect to an external address
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))  # Using Google's public DNS server as an external address
+        local_ip = s.getsockname()[0]  # Get the local IP address
+    except Exception as e:
+        local_ip = '127.0.0.1'  # Fallback to localhost if an error occurs
+    finally:
+        s.close()
+    return local_ip
 
 # Helper function to check allowed file types
 def allowed_file(filename):
@@ -139,11 +153,12 @@ def process_image():
 
 # Run the app
 if __name__ == '__main__':
-    app.run(ssl_context=(cert_path, key_path), host='localhost', port=5000, debug=True)
+    ip_address = get_local_ip()
+    app.run(ssl_context=(cert_path, key_path), host=ip_address, port=5000, debug=True)
 
     # Make a GET request to /ping to check if the server is running
     try:
-        response = requests.get('https://127.0.0.1:5000/ping')  # Adjust the URL if necessary
+        response = requests.get(f"https://{ip_address}:5000/ping") 
         print(response.json())  # Print the response to the console
     except Exception as e:
         print(f"Error making request to /ping: {str(e)}")
