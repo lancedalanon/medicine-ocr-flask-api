@@ -1,8 +1,7 @@
 import easyocr
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
-import cv2
 
 class ImageProcessor:
     _reader = None
@@ -18,25 +17,6 @@ class ImageProcessor:
 
         self.reader = ImageProcessor._reader
 
-    def preprocess_image(self, image: Image.Image) -> np.ndarray:
-        """
-        Preprocess the image by converting it to grayscale and applying adaptive thresholding.
-
-        Args:
-            image (PIL.Image.Image): The image to preprocess.
-
-        Returns:
-            np.ndarray: The preprocessed image as a numpy array.
-        """
-        # Convert image to grayscale using OpenCV for speed
-        image_cv = np.array(image.convert('L'))  # Convert to grayscale (L mode for faster processing)
-
-        # Apply adaptive thresholding to remove noise and enhance text
-        preprocessed_image = cv2.adaptiveThreshold(image_cv, 255, 
-                                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                                   cv2.THRESH_BINARY, 11, 2)
-        return preprocessed_image
-
     def process_image(self, image: Image.Image) -> dict:
         """
         Process the image to extract text using EasyOCR while preserving the layout.
@@ -48,11 +28,11 @@ class ImageProcessor:
             dict: A dictionary containing the success status and extracted text or error.
         """
         try:
-            # Preprocess image for better OCR performance
-            preprocessed_image = self.preprocess_image(image)
+            # Convert the image to a numpy array for EasyOCR
+            image_np = np.array(image)
 
-            # Perform OCR on the preprocessed image
-            result = self.reader.readtext(preprocessed_image)
+            # Perform OCR on the raw image (no preprocessing)
+            result = self.reader.readtext(image_np)
 
             # If no text is detected, return early with an error message
             if not result:

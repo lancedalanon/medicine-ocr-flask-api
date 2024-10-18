@@ -7,6 +7,8 @@ import os
 from dotenv import load_dotenv
 from image_processor import ImageProcessor
 import requests
+import sys
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +24,18 @@ image_processor = ImageProcessor()
 
 # Allowed file extensions for image uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+# Determine if the application is running as a PyInstaller bundle
+if hasattr(sys, '_MEIPASS'):
+    # Running from the PyInstaller bundle, use the bundled path
+    basedir = Path(sys._MEIPASS)
+else:
+    # Running in development mode, use the current directory
+    basedir = Path('.')
+
+# Define the paths for the SSL certificate and key
+cert_path = basedir / 'cert.pem'
+key_path = basedir / 'key.pem'
 
 # Middleware to check API key
 def require_api_key(f):
@@ -125,11 +139,11 @@ def process_image():
 
 # Run the app
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(ssl_context=(cert_path, key_path), host='localhost', port=5000, debug=True)
 
     # Make a GET request to /ping to check if the server is running
     try:
-        response = requests.get('http://127.0.0.1:5000/ping')  # Adjust the URL if necessary
+        response = requests.get('https://127.0.0.1:5000/ping')  # Adjust the URL if necessary
         print(response.json())  # Print the response to the console
     except Exception as e:
         print(f"Error making request to /ping: {str(e)}")
