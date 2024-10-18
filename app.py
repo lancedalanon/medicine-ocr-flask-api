@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, abort
+from flask_cors import CORS
 from functools import wraps
 from PIL import Image
 from io import BytesIO
@@ -12,6 +13,9 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Apply CORS to the entire app
+CORS(app)
 
 # Initialize ImageProcessor
 image_processor = ImageProcessor()
