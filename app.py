@@ -26,18 +26,6 @@ image_processor = ImageProcessor()
 # Allowed file extensions for image uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-# Determine if the application is running as a PyInstaller bundle
-if hasattr(sys, '_MEIPASS'):
-    # Running from the PyInstaller bundle, use the bundled path
-    basedir = Path(sys._MEIPASS)
-else:
-    # Running in development mode, use the current directory
-    basedir = Path('.')
-
-# Define the paths for the SSL certificate and key
-cert_path = basedir / 'cert.pem'
-key_path = basedir / 'key.pem'
-
 # Middleware to check API key
 def require_api_key(f):
     @wraps(f)
@@ -105,6 +93,7 @@ def process_image():
     Returns:
         JSON response with the extracted text or an error message.
     """
+    
     # Check if the request contains a file part
     if 'image' not in request.files:
         return jsonify({
@@ -154,11 +143,11 @@ def process_image():
 # Run the app
 if __name__ == '__main__':
     ip_address = get_local_ip()
-    app.run(ssl_context=(cert_path, key_path), host=ip_address, port=5000, debug=True)
+    app.run(host=ip_address, port=5000, debug=True)
 
     # Make a GET request to /ping to check if the server is running
     try:
-        response = requests.get(f"https://{ip_address}:5000/ping") 
+        response = requests.get(f"http://{ip_address}:5000/ping") 
         print(response.json())  # Print the response to the console
     except Exception as e:
         print(f"Error making request to /ping: {str(e)}")

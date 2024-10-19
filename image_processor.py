@@ -1,7 +1,8 @@
 import easyocr
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 from concurrent.futures import ThreadPoolExecutor
+from os import cpu_count
 
 class ImageProcessor:
     _reader = None
@@ -17,6 +18,27 @@ class ImageProcessor:
 
         self.reader = ImageProcessor._reader
 
+    def preprocess_image(self, image: Image.Image) -> Image.Image:
+        """
+        Preprocess the image for better OCR results.
+        
+        Args:
+            image (PIL.Image.Image): The image to preprocess.
+        
+        Returns:
+            PIL.Image.Image: The preprocessed image.
+        """
+        # Resize the image
+        image = image.resize((image.width // 2, image.height // 2))  # Adjust scaling as needed
+        
+        # Convert to grayscale
+        image = image.convert('L')  # 'L' mode is grayscale
+        
+        # Optionally, apply Gaussian blur to reduce noise
+        image = image.filter(ImageFilter.GaussianBlur(radius=1))
+
+        return image
+
     def process_image(self, image: Image.Image) -> dict:
         """
         Process the image to extract text using EasyOCR while preserving the layout.
@@ -28,6 +50,8 @@ class ImageProcessor:
             dict: A dictionary containing the success status and extracted text or error.
         """
         try:
+            image = self.preprocess_image(image)  # Preprocess the image
+
             # Convert the image to a numpy array for EasyOCR
             image_np = np.array(image)
 
@@ -90,16 +114,33 @@ class ImageProcessor:
 
     def process_images_in_parallel(self, images: list) -> list:
         """
-        Process multiple images in parallel using ThreadPoolExecutor.
-
+        Process multiple images in parallel using ThreadPoolExecutor with optimized thread count.
+        
         Args:
             images (list): List of PIL.Image.Image objects to process.
-
+        
         Returns:
             list: List of dictionaries with the results for each image.
         """
-        with ThreadPoolExecutor() as executor:
-            # Process images concurrently
+        num_workers = cpu_count()  # Get the number of available CPU cores
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
             results = list(executor.map(self.process_image, images))
 
+        return results
+
+    def process_images_in_batches(self, images: list, batch_size: int = 10) -> list:
+        """
+        Process images in batches to optimize performance.
+        
+        Args:
+            images (list): List of PIL.Image.Image objects to process.
+            batch_size (int): Number of images to process at a time.
+        
+        Returns:
+            list: List of dictionaries with the results for each image.
+        """
+        results = []
+        for i in range(0, len(images), batch_size):
+            batch = images[i:i + batch_size]
+            results.extend(self.process_images_in_parallel(batch))
         return results
