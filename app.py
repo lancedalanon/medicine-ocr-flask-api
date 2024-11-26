@@ -3,16 +3,10 @@ from flask_cors import CORS
 from functools import wraps
 from PIL import Image
 from io import BytesIO
-import os
-from dotenv import load_dotenv
 from image_processor import ImageProcessor
 import requests
-import sys
 from pathlib import Path
 import socket
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -25,23 +19,6 @@ image_processor = ImageProcessor()
 
 # Allowed file extensions for image uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-# Middleware to check API key
-def require_api_key(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Get API key from headers
-        api_key = request.headers.get('X-API-KEY')
-        # Check if the API key matches the one in .env
-        if api_key and api_key == os.getenv('API_KEY'):
-            return f(*args, **kwargs)  # Proceed if the key is valid
-        else:
-            # Abort with 403 Forbidden if API key is missing or incorrect
-            return jsonify({
-                'message': 'Forbidden: Invalid or missing API key',
-                'data': None
-            }), 403
-    return decorated_function
 
 # Get the local IP address
 def get_local_ip():
@@ -85,7 +62,6 @@ def ping():
 
 # Process image route - POST method
 @app.route('/process-image', methods=['POST'])
-@require_api_key  # Protect this route with the API key
 def process_image():
     """
     Handles image uploads in memory and processes them using EasyOCR to extract text.
